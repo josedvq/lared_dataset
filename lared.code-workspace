@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"name": "lared",
+			"path": "../lared"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true
+	}
+}
