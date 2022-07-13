@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 from tqdm import tqdm
 
-from ..preprocess.pose.utils import get_track_rectangle, tlwh_to_tlbr
+from ..preprocess.pose.utils import enlarge_rectangle, get_track_rectangle, tlwh_to_tlbr
 from lared_dataset.constants import raw_videos_path
 
 def make_examples(tracks, window_len=90, cam=0):
@@ -58,6 +58,11 @@ def write_example_video(ex, out_folder, cap):
     # y1 = max(0, rect[1] - h_to_add)
     # x2 = min(1920, rect[0] + rect[2] + w_to_add)
     # y2 = min(1080, rect[1] + rect[3] + h_to_add)
+    rect = enlarge_rectangle(
+        rect, 
+        perc=0.15, 
+        cast_to_int=True)
+
     x1, y1, x2, y2 = tlwh_to_tlbr(rect)
     
     # new size
