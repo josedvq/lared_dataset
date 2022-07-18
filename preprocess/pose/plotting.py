@@ -5,7 +5,7 @@ from tqdm import tqdm
 from matplotlib import pyplot as plt
 
 from ...constants import raw_videos_path
-from .pose_renderer import render_poses
+from ...tools.pose_renderer import render_poses
 from.pose_parameters import POSE_UPPER_BODY_PAIRS, POSE_UPPER_BODY_COLORS
 
 class PosePlotter:

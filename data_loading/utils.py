@@ -50,6 +50,8 @@ def write_example_video(ex, out_folder, cap):
 
     cap.set(cv2.CAP_PROP_POS_FRAMES, ex['ini']+1) # one-based
     vout_path = os.path.join(out_folder, '{:05d}.mp4'.format(ex['id']))
+    if os.path.exists(vout_path):
+        return
     
     # enlarge the rectangle
     # w_to_add = round(24 + 15 * rect[1] / 1080)

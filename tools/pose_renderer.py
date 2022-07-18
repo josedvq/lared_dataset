@@ -6,7 +6,8 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from . import pose_parameters
+from lared_dataset.preprocess.pose import pose_parameters
+
 
 def get_keypoints_rectangle(keypoints):
     num_keypoints = len(keypoints) // 3

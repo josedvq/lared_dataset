@@ -15,7 +15,7 @@ from dynarray import DynamicArray
 from sklearn.metrics.pairwise import euclidean_distances
 from scipy.optimize import linear_sum_assignment
 
-from . import pose_renderer
+from ...tools import pose_renderer
 from jose.helpers.tqdm import tqdm_joblib
 
 
