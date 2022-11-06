@@ -19,6 +19,8 @@ vad_path = os.path.join(annotations_path, 'vad')
 poses_path = os.path.join(annotations_path, 'pose')
 laughter_annot_path = os.path.join(annotations_path, 'laughter')
 
+examples_path = os.path.join(dataset_path, 'examples.pkl')
+
 # valid sections of the data (in frames)
 # these segments contain mingling interaction
 # used for filtering pose tracks

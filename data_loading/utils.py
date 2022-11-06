@@ -1,5 +1,5 @@
-from curses import window
 import os
+import hashlib
 from pathlib import Path
 
 import numpy as np
@@ -9,16 +9,28 @@ from tqdm import tqdm
 from ..preprocess.pose.utils import enlarge_rectangle, get_track_rectangle, tlwh_to_tlbr
 from lared_dataset.constants import raw_videos_path
 
+def get_video_hash(pid, ini_time, end_time):
+    return hashlib.md5(f'{pid}_{ini_time:.2f}_{end_time:.2f}'.encode()).hexdigest()
+
+
 def make_examples(tracks, window_len=90, cam=0):
     examples = list()
     example_id = 0
     for _, track in enumerate(tracks):
         for i in range(0, len(track['poses']) // window_len):
+            ini_time = (track['ini'] + i * window_len) / 29.97
+            end_time = (track['ini'] + (i+1) * window_len) / 29.97
+
+            hash = get_video_hash(track["pid"], ini_time, end_time)
+            
             examples.append({
                 'id': example_id,
                 'pid': track['pid'],
                 'cam': cam,
                 'ini': track['ini'] + i * window_len,
+                'hash': hash,
+                'ini_time': ini_time,
+                'end_time': end_time,
                 'poses': track['poses'][i * window_len: (i + 1) * window_len,:],
                 'track_id': track['id'], 
                 'track_ini': i * window_len, 
@@ -49,7 +61,7 @@ def write_example_video(ex, out_folder, cap):
     rect = get_track_rectangle(track)
 
     cap.set(cv2.CAP_PROP_POS_FRAMES, ex['ini']+1) # one-based
-    vout_path = os.path.join(out_folder, '{:05d}.mp4'.format(ex['id']))
+    vout_path = os.path.join(out_folder, '{:s}.mp4'.format(ex['hash']))
     if os.path.exists(vout_path):
         return
     
