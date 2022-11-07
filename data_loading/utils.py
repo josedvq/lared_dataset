@@ -1,60 +1,25 @@
 import os
 import hashlib
+import pickle
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import cv2
 from tqdm import tqdm
+from scipy.interpolate import interp1d
 
 from ..preprocess.pose.utils import enlarge_rectangle, get_track_rectangle, tlwh_to_tlbr
-from lared_dataset.constants import raw_videos_path
+from lared_dataset.constants import (
+    raw_videos_path,
+    balloon_pop_1_video_frame,
+    balloon_pop_1_accel_frame,
+    balloon_pop_3_video_frame,
+    balloon_pop_3_accel_frame
+)
 
 def get_video_hash(pid, ini_time, end_time):
     return hashlib.md5(f'{pid}_{ini_time:.2f}_{end_time:.2f}'.encode()).hexdigest()
-
-
-def make_examples(tracks, window_len=90, cam=0):
-    examples = list()
-    example_id = 0
-    for _, track in enumerate(tracks):
-        for i in range(0, len(track['poses']) // window_len):
-            ini_time = (track['ini'] + i * window_len) / 29.97
-            end_time = (track['ini'] + (i+1) * window_len) / 29.97
-
-            hash = get_video_hash(track["pid"], ini_time, end_time)
-            
-            examples.append({
-                'id': example_id,
-                'pid': track['pid'],
-                'cam': cam,
-                'ini': track['ini'] + i * window_len,
-                'hash': hash,
-                'ini_time': ini_time,
-                'end_time': end_time,
-                'poses': track['poses'][i * window_len: (i + 1) * window_len,:],
-                'track_id': track['id'], 
-                'track_ini': i * window_len, 
-                'track_fin': (i + 1) * window_len
-            })
-            example_id += 1
-    return examples
-
-def reset_examples_ids(examples):
-    for i, ex in enumerate(examples):
-        ex['id'] = i
-
-def filter_examples_by_movement_threshold(examples, ts=20):
-    new_examples = list()
-
-    for ex in examples:
-        track = ex['poses']
-        std_x = np.std(track[:,3])
-        std_y = np.std(track[:,4])
-        
-        if std_x > ts or std_y > ts:
-            continue
-
-        new_examples.append(ex)
 
 def write_example_video(ex, out_folder, cap):
     track = ex['poses'] 
@@ -100,3 +65,100 @@ def write_all_example_videos(examples, out_folder):
 
     for ex in tqdm(examples):
         write_example_video(ex, out_folder, caps[ex['cam']])
+
+def reset_examples_ids(examples):
+    for i, ex in enumerate(examples):
+        ex['id'] = i
+
+class Maker():
+
+    def __init__(self, tracks_path=None, accel_path=None, vad_path=None):
+        self.tracks = pickle.load(open(tracks_path, "rb"))
+
+        self.accel = {}
+        if accel_path is not None:
+            self.load_accel()
+
+        self.vad = {}
+        if vad_path is not None:
+            self.load_vad()
+
+        self.examples = None
+
+    def load_accel(self, accel_path):
+        self.accel = pickle.load(open(accel_path, 'rb'))
+
+    def load_vad(self, vad_path):
+        self.vad = {}
+        for i in range(1, 45):
+            fpath = os.path.join(vad_path, f'{i}')
+            if os.path.exists(fpath) and os.path.isfile(fpath):
+                self.vad[i] = pd.read_csv(fpath, header=None).to_numpy()
+
+        if len(self.vad) == 0:
+            print('load_vad called but nothing loaded.')
+
+    def _get_vad(self, pid, ini_time, end_time, vad_fs=100):
+        # note audio and video start at the same time
+        if pid not in self.vad:
+            return None
+
+        ini = round(ini_time * vad_fs)
+        end = round(end_time * vad_fs)
+        return self.vad[pid][ini:end]
+        
+
+    def make_examples(self, window_len=90, cam=0):
+        examples = list()
+        example_id = 0
+        for _, track in enumerate(self.tracks):
+            for i in range(0, len(track['poses']) // window_len):
+                ini_time = (track['ini'] + i * window_len) / 29.97
+                end_time = (track['ini'] + (i+1) * window_len) / 29.97
+
+                hash = get_video_hash(track["pid"], ini_time, end_time)
+                
+                examples.append({
+                    'id': example_id,
+                    'pid': track['pid'],
+                    'cam': cam,
+                    'ini': track['ini'] + i * window_len,
+                    'hash': hash,
+                    'ini_time': ini_time,
+                    'end_time': end_time,
+        
+                    # track info
+                    'track_id': track['id'], 
+                    'track_ini': i * window_len, 
+                    'track_fin': (i + 1) * window_len,
+
+                    # data
+                    'poses': track['poses'][i * window_len: (i + 1) * window_len,:],
+                    'vad': self._get_vad(track['pid'], ini_time, end_time)
+                })
+                example_id += 1
+        
+        self.examples = examples
+
+    def filter_examples_by_movement_threshold(self, ts=20):
+        new_examples = list()
+
+        for ex in self.examples:
+            track = ex['poses']
+            std_x = np.std(track[:,3])
+            std_y = np.std(track[:,4])
+            
+            if std_x > ts or std_y > ts:
+                continue
+
+            new_examples.append(ex)
+
+    
+video_seconds_to_accel_sample = interp1d(
+    [
+        balloon_pop_1_video_frame/29.97, 
+        balloon_pop_3_video_frame/29.97
+    ], [
+        balloon_pop_1_accel_frame, 
+        balloon_pop_3_accel_frame
+    ], fill_value="extrapolate")

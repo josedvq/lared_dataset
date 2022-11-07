@@ -28,3 +28,12 @@ valid_frame_intvals = [
     (50949, 73426),
     (99800, math.inf)
 ]
+
+balloon_pop_1_video_frame = 23030 # to 
+balloon_pop_1_accel_frame = 45977 + 19/34
+
+balloon_pop_2_video_frame = 74844
+balloon_pop_2_accel_frame = 47706 + 23/28
+
+balloon_pop_3_video_frame = 166836.5
+balloon_pop_3_accel_frame = 50776 + 30.5/32

@@ -7,9 +7,13 @@ from pathlib import Path
 import torch
 import numpy as np
 import pandas as pd
+from scipy.interpolate import interp1d
 from pytorchvideo.data.video import VideoPathHandler
 
-from utils import get_video_hash
+from utils import (
+    get_video_hash,
+    video_seconds_to_accel_sample
+)
 
 class VideoExtractor():
     _MAX_CONSECUTIVE_FAILURES = 10
@@ -56,78 +60,22 @@ class VideoExtractor():
         return self._get_clip(key, start, end)
 
 
-class LabelExtractor():
-    def __init__(self, annot_path, min_len=None, transform=None):
-        self.annot_path = annot_path
-        self.transform = transform
-        self.min_len = min_len
-        
-
-        self.annot = {}
-        for f in Path(self.annot_path).glob('[0-9]{1-2}'):
-            self.annot[int(f.name)] = pd.read_csv(f, header=None, index_col=False)
+class AccelExtractor():
+    def __init__(self, accel_path):
+        self.accel = pickle.load(open(accel_path, 'rb'))
 
     def __call__(self, pid, start_time, end_time):
-        start = floor(start_time * 100) 
-        end = floor(end_time * 100)
-        subject_annot = self.annot[pid].iloc[start: end, :]
+        assert pid in self.accel
 
-        if self.min_len is not None and example_annot.shape[0] < self.min_len:
-            example_annot = np.pad(example_annot, 
-                (0, self.min_len-example_annot.shape[0]),
-                mode='constant',
-                constant_values= 0)
+        accel_ini = video_seconds_to_accel_sample(start_time)
+        accel_fin = video_seconds_to_accel_sample(end_time)
 
-        if self.transform:
-            example_annot = self.transform(example_annot)
+        my_subj_accel = self.accel[pid]
+        ini_idx = np.argmax(my_subj_accel[:,0] > accel_ini)
+        fin_idx = np.argmax(my_subj_accel[:,0] > accel_fin) + 1
 
-        return example_annot
+        if ini_idx == 0:
+            print('out of bounds. pid={:d}, accel_ini={:.2f}'.format(ex['person'], accel_ini))
 
-
-class SegMaskExtractor():
-    def __init__(self, annot_path, transform=None, min_len=None, max_len=None, sr=30):
-        self.annot_path = annot_path
-        self.transform = transform
-        if min_len is not None and max_len is not None:
-            assert max_len >= min_len
-        self.min_samples = round(sr*min_len) if min_len is not None else None
-        self.max_samples = round(sr*max_len) if max_len is not None else None
-        
-        self.sr = sr
-        
-        self.annot = pickle.load(open(annot_path, 'rb'))
-
-    def _subsample(self, annot, window: Tuple[int, int]):
-        start = max(0, round(window[0] * self.sr))
-        end  = min(len(annot), round(window[1] * self.sr))
-
-        if len(annot) < end - start:
-            raise Exception(f'Not implemented. annot shape is {str(annot.shape)}')
-
-        annot = annot[start: end]
-        return annot
-
-    def extract_multiple(self, keys):
-        return np.stack([self(*k) for k in keys])
-
-    def __call__(self, key, start=None, end=None):
-        assert (start is None and end is None) or (start is not None and end is not None)
-
-        example_annot = self.annot[key].astype(np.float32)
-
-        if start is not None and end is not None:
-            example_annot = self._subsample(example_annot, (start, end))
-
-        if self.min_samples is not None and len(example_annot) < self.min_samples:
-            example_annot = np.pad(example_annot, 
-                ((0, self.min_samples - len(example_annot))),
-                mode='constant',
-                constant_values= 0)
-
-        if self.max_samples is not None and len(example_annot) > self.max_samples:
-            example_annot = example_annot[:self.max_samples]
-
-        if self.transform:
-            return self.transform(example_annot)
-
-        return example_annot
+        accel = my_subj_accel[ini_idx: fin_idx, 1:]
+        return accel
