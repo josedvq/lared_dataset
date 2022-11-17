@@ -77,11 +77,11 @@ class Maker():
 
         self.accel = {}
         if accel_path is not None:
-            self.load_accel()
+            self.load_accel(accel_path)
 
         self.vad = {}
         if vad_path is not None:
-            self.load_vad()
+            self.load_vad(vad_path)
 
         self.examples = None
 
@@ -99,7 +99,7 @@ class Maker():
             print('load_vad called but nothing loaded.')
 
     def _get_vad(self, pid, ini_time, end_time, vad_fs=100):
-        # note audio and video start at the same time
+        # note audio (vad) and video start at the same time
         if pid not in self.vad:
             return None
 
@@ -113,10 +113,23 @@ class Maker():
         example_id = 0
         for _, track in enumerate(self.tracks):
             for i in range(0, len(track['poses']) // window_len):
+
+                if track['pid'] not in self.accel:
+                    continue
+
                 ini_time = (track['ini'] + i * window_len) / 29.97
                 end_time = (track['ini'] + (i+1) * window_len) / 29.97
 
                 hash = get_video_hash(track["pid"], ini_time, end_time)
+                vad = self._get_vad(track['pid'], ini_time, end_time)
+
+                if vad is None:
+                    continue
+
+                poses = track['poses'][i * window_len: (i + 1) * window_len,:]
+                rect = get_track_rectangle(poses)
+                if rect[2] == 0 or rect[3] == 0:
+                    continue
                 
                 examples.append({
                     'id': example_id,
@@ -133,12 +146,13 @@ class Maker():
                     'track_fin': (i + 1) * window_len,
 
                     # data
-                    'poses': track['poses'][i * window_len: (i + 1) * window_len,:],
-                    'vad': self._get_vad(track['pid'], ini_time, end_time)
+                    'poses': poses,
+                    'vad': vad
                 })
                 example_id += 1
         
         self.examples = examples
+        return examples
 
     def filter_examples_by_movement_threshold(self, ts=20):
         new_examples = list()

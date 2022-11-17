@@ -7,10 +7,11 @@ from pathlib import Path
 import torch
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from scipy.interpolate import interp1d
 from pytorchvideo.data.video import VideoPathHandler
 
-from utils import (
+from .utils import (
     get_video_hash,
     video_seconds_to_accel_sample
 )
@@ -23,6 +24,7 @@ class VideoExtractor():
         videos_path: str,
         transform: Optional[Callable[[dict], Any]] = None,
         sr = 30, # fps
+        n_jobs = 1
     ) -> None:
         self.videos_path = videos_path
         self.transform = transform
@@ -33,6 +35,7 @@ class VideoExtractor():
         self.video_path_handler = VideoPathHandler()
 
         self.sr = sr
+        self.n_jobs = n_jobs
 
     def _get_clip(self, pid, start, end):
         hash = get_video_hash(pid, start, end)
@@ -49,7 +52,7 @@ class VideoExtractor():
         if video_is_null:
             raise Exception(f"Failed to load clip {video.name}, for start={start}, end={end}")
 
-        frames = video['video'].to(torch.uint32)
+        frames = video['video'].to(torch.uint8)
             
         if self.transform is not None:
             frames = self.transform(frames)
@@ -59,23 +62,45 @@ class VideoExtractor():
     def __call__(self, key, start, end) -> dict:
         return self._get_clip(key, start, end)
 
+    def extract_multiple(self, keys):
+        return np.stack(Parallel(n_jobs=self.n_jobs)(delayed(self.__call__)(*k) for k in keys))
+        return np.stack([self(*k) for k in keys])
+
 
 class AccelExtractor():
-    def __init__(self, accel_path):
+    def __init__(self, accel_path, strict=False):
         self.accel = pickle.load(open(accel_path, 'rb'))
+        self.strict = strict
 
-    def __call__(self, pid, start_time, end_time):
-        assert pid in self.accel
+        self.num_channels = 3
+        self.fs = 20
 
-        accel_ini = video_seconds_to_accel_sample(start_time)
-        accel_fin = video_seconds_to_accel_sample(end_time)
+    def __call__(self, pid, start, end):
+        if self.strict and pid not in self.accel:
+            raise ValueError(f'pid {pid} not in self.accel')
+        
+        if pid not in self.accel:
+            return np.zeros((self.num_channels, round(self.fs * (end-start))), dtype=np.float32)
+
+        accel_ini = video_seconds_to_accel_sample(start)
+        accel_fin = video_seconds_to_accel_sample(end)
 
         my_subj_accel = self.accel[pid]
         ini_idx = np.argmax(my_subj_accel[:,0] > accel_ini)
-        fin_idx = np.argmax(my_subj_accel[:,0] > accel_fin) + 1
+        fin_idx = ini_idx + round(self.fs * (end-start))
 
-        if ini_idx == 0:
-            print('out of bounds. pid={:d}, accel_ini={:.2f}'.format(ex['person'], accel_ini))
+        # if ini_idx == 0:
+        #     print('out of bounds. pid={:d}, accel_ini={:.2f}'.format(ex['person'], accel_ini))
 
         accel = my_subj_accel[ini_idx: fin_idx, 1:]
-        return accel
+
+        if len(accel) < round(self.fs * (end-start)):
+            accel = np.pad(accel, 
+                ((0, round(self.fs * (end-start))-len(accel)), (0, 0)),
+                mode='constant',
+                constant_values= 0)
+
+        return accel.transpose().astype(np.float32)
+
+    def extract_multiple(self, keys):
+        return np.stack([self(*k) for k in keys])

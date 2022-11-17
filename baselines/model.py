@@ -44,8 +44,11 @@ class FusionModel(torch.nn.Module):
 
         if 'video' in batch:
             features.append(self.video_feature_extractor(batch['video']))
-        
-        x = self.linear(torch.hstack(features))
+
+        x = torch.hstack(features)
+
+        x = torch.flatten(x, start_dim=1)
+        x = self.linear(x)
 
         return x
         

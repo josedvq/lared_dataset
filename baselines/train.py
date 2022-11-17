@@ -102,7 +102,7 @@ def train(i, train_ds, val_ds, modalities,
         sampler=BatchSampler(
             RandomSampler(train_ds, generator=g), batch_size=batch_size, drop_last=False
         ),
-        num_workers=0,
+        num_workers=8,
         generator=g,
         collate_fn=_collate_fn
     )
@@ -115,7 +115,7 @@ def train(i, train_ds, val_ds, modalities,
         sampler=BatchSampler(
             SequentialSampler(val_ds), batch_size=batch_size, drop_last=False
         ),
-        num_workers=0,
+        num_workers=8,
         generator=g,
         collate_fn=_collate_fn
     )

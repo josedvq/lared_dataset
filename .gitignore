@@ -1,2 +1,6 @@
 __pycache__
 examples.pkl
+baselines/logs/**/*
+baselines/weights/**/*
+preprocess/audio/output/**/*
+preprocess/audio/pretrained_models/**/*
