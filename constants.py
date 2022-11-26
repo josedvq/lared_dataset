@@ -37,3 +37,6 @@ balloon_pop_2_accel_frame = 47706 + 23/28
 
 balloon_pop_3_video_frame = 166836.5
 balloon_pop_3_accel_frame = 50776 + 30.5/32
+
+# models
+models_path = '/mnt/e/data/models'

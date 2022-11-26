@@ -91,7 +91,7 @@ class Maker():
     def load_vad(self, vad_path):
         self.vad = {}
         for i in range(1, 45):
-            fpath = os.path.join(vad_path, f'{i}')
+            fpath = os.path.join(vad_path, f'{i}.vad')
             if os.path.exists(fpath) and os.path.isfile(fpath):
                 self.vad[i] = pd.read_csv(fpath, header=None).to_numpy()
 
@@ -104,9 +104,16 @@ class Maker():
             return None
 
         ini = round(ini_time * vad_fs)
-        end = round(end_time * vad_fs)
-        return self.vad[pid][ini:end]
-        
+        width = round((end_time - ini_time) * vad_fs)
+        end = ini + width  
+
+        return self.vad[pid][ini:end].flatten()
+
+    def _interp_vad(self, vad, in_fs, out_fs):
+        t = np.arange(0, len(vad) / in_fs, 1/in_fs)
+        f = interp1d(t, vad, kind='nearest')
+        tnew = np.arange(0, len(vad) / in_fs, 1/out_fs)
+        return f(tnew)
 
     def make_examples(self, window_len=90, cam=0):
         examples = list()
@@ -122,6 +129,7 @@ class Maker():
 
                 hash = get_video_hash(track["pid"], ini_time, end_time)
                 vad = self._get_vad(track['pid'], ini_time, end_time)
+                interp_vad = self._interp_vad(vad, 100, 20)
 
                 if vad is None:
                     continue
@@ -147,7 +155,8 @@ class Maker():
 
                     # data
                     'poses': poses,
-                    'vad': vad
+                    'vad': vad,
+                    'interp_vad': interp_vad
                 })
                 example_id += 1
         

@@ -38,6 +38,7 @@ class FatherDataset(torch.utils.data.Dataset):
     ) -> None:
         self.examples = examples
         self.extractors = extractors
+        self.label_threshold = 0.25
 
     def get_multiple_items(self, idxs):
         examples = [self.examples[idx] for idx in idxs] 
@@ -47,8 +48,9 @@ class FatherDataset(torch.utils.data.Dataset):
         for ex_name, extractor in self.extractors.items():
             items[ex_name] = extractor.extract_multiple(keys)
 
-        items['label'] = [np.mean(ex['vad']) >= 0.5 for ex in examples]
+        # items['label'] = [np.mean(ex['vad']) >= self.label_threshold for ex in examples]
         items['index'] = idxs
+        items['label'] = np.stack([ex['interp_vad'] for ex in examples])
 
         return items
 
@@ -62,7 +64,8 @@ class FatherDataset(torch.utils.data.Dataset):
             item[ex_name] = extractor(*key)
 
         item['poses'] = ex['poses']
-        item['label'] = np.mean(ex['vad']) >= 0.5
+        # item['label'] = np.mean(ex['vad']) >= self.label_threshold
+        item['label'] = ex['interp_vad']
         item['index'] = idx
         
         return item
@@ -77,10 +80,10 @@ class FatherDataset(torch.utils.data.Dataset):
         return len(self.examples)
 
     def get_all_labels(self):
-        return [np.mean(ex['vad']) >= 0.5 for ex in self.examples]
+        return [np.mean(ex['vad']) >= self.label_threshold for ex in self.examples]
 
     def get_groups(self):
-        return [ex['pid'] for ex in self.examples]
+        return [f'{ex["pid"]}' for ex in self.examples]
 
     def auc(self, idxs, proba: np.array):
         labels = self.get_all_labels()

@@ -8,14 +8,14 @@ from sklearn.metrics import roc_auc_score
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.sampler import BatchSampler, RandomSampler, SequentialSampler
 
-from .model import FusionModel
+from .model import SegmentationFusionModel
 
 class System(pl.LightningModule):
     def __init__(self, modalities, task='classification'):
         super().__init__()
         self.save_hyperparameters()
        
-        self.model = FusionModel(modalities)
+        self.model = SegmentationFusionModel(modalities, mask_len=60)
 
         self.loss_fn = {
             'classification':F.binary_cross_entropy_with_logits,
