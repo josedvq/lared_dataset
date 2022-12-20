@@ -3,18 +3,20 @@ channels:
   - conda-forge
 dependencies:
   - python=3.8
+  - pip
   - matplotlib=3.*
-  - numpy=1.*
   - scikit-learn=1.2.*
   - pandas=1.*
   - scipy=1.*
   - tqdm=4.*
-  - pytorch-lightning=1.*
   - pip:
     - opencv-python==4.4.0.44
     - torch==1.13.1
+    - numpy==1.24.0
     - pytorchvideo==0.1.5
     - torchvision==0.14.1
     - torchaudio==0.13.1
+    - pytorch-lightning==1.8.5
     - huggingface-hub==0.11.1
+    - dynarray==0.1.3
   
