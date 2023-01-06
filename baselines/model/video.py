@@ -6,7 +6,7 @@ import torch.nn as nn
 from slowfast.config.defaults import get_cfg
 from slowfast.models.ptv_model_builder import PTVResNet, PTVSlowFast
 
-from lared_laughter.constants import models_path
+from lared_dataset.constants import models_path
 
 def _get_resnet_cfg():
     cfg = get_cfg()

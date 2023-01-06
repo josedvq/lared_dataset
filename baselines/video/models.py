@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import pytorchvideo.models
 
-from lared_laughter.constants import models_path
+from lared_dataset.constants import models_path
 from slowfast.models.ptv_model_builder import PTVResNet, PTVSlowFast
 from slowfast.config.defaults import get_cfg
 

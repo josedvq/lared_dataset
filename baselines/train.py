@@ -85,10 +85,10 @@ def train(i, train_ds, val_ds, modalities,
         deterministic=False, eval_every_epoch=False, weights_path=None):
 
     num_epochs = {
-        ('audio',): 10,
         ('accel',): 10,
+        ('poses',): 15,
         ('video',): 15,
-        ('audio', 'video', 'accel'): 15
+        ('video', 'accel', 'poses'): 15
     }
 
     # data loaders

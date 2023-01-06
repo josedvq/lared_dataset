@@ -27,9 +27,9 @@ class SegmentationFusionModel(torch.nn.Module):
         if 'accel' in modalities:
             self.accel_feature_extractor = AccelModelBodyNoPool(c_in=3)
             self.accel_head = AccelSegmentationhead(c_out=1, output_len=mask_len)
-        if 'audio' in modalities:
-            self.audio_feature_extractor = get_audio_feature_extractor().cuda()
-            self.audio_head = AudioSegmentationHead(num_channels=16, output_len=mask_len)
+        if 'poses' in modalities:
+            self.pose_feature_extractor = AccelModelBodyNoPool(c_in=26)
+            self.pose_head = AccelSegmentationhead(c_out=1, output_len=mask_len)
         if 'video' in modalities:
             self.video_feature_extractor = get_video_feature_extractor(pool=False).cuda()
             self.video_head = VideoSegmentationHead(output_len=mask_len)
@@ -46,9 +46,9 @@ class SegmentationFusionModel(torch.nn.Module):
             f = self.video_feature_extractor(batch['video'])
             masks.append(self.video_head(f))
         
-        if 'audio' in batch:
-            f = self.audio_feature_extractor(batch['audio'])
-            masks.append(self.audio_head(f))
+        if 'poses' in batch:
+            f = self.pose_feature_extractor(batch['poses'])
+            masks.append(self.pose_head(f))
 
         masks = torch.stack(masks, dim=2)
         masks = masks.mean(dim=2)

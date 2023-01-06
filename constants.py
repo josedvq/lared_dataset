@@ -1,7 +1,9 @@
 import os
 import math
 
-dataset_path = '/mnt/e/data/lared'
+dataset_path = '/home/josedvq/furnace/data/lared'
+# models
+models_path = '/home/josedvq/furnace/models'
 
 raw_data_path = os.path.join(dataset_path, 'raw')
 raw_pose_path = os.path.join(raw_data_path, 'pose')
@@ -38,5 +40,3 @@ balloon_pop_2_accel_frame = 47706 + 23/28
 balloon_pop_3_video_frame = 166836.5
 balloon_pop_3_accel_frame = 50776 + 30.5/32
 
-# models
-models_path = '/mnt/e/data/models'

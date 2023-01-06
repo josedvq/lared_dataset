@@ -35,10 +35,12 @@ class FatherDataset(torch.utils.data.Dataset):
         self,
         examples: pd.DataFrame,
         extractors:dict,
+        transform=None
     ) -> None:
         self.examples = examples
         self.extractors = extractors
         self.label_threshold = 0.25
+        self.transform = transform
 
     def get_multiple_items(self, idxs):
         examples = [self.examples[idx] for idx in idxs] 
@@ -49,8 +51,12 @@ class FatherDataset(torch.utils.data.Dataset):
             items[ex_name] = extractor.extract_multiple(keys)
 
         # items['label'] = [np.mean(ex['vad']) >= self.label_threshold for ex in examples]
-        items['index'] = idxs
+        items['poses'] = np.stack([ex['poses'].transpose() for ex in examples])
         items['label'] = np.stack([ex['interp_vad'] for ex in examples])
+        items['index'] = idxs
+
+        if self.transform:
+            items = self.transform(items, multiple=True)
 
         return items
 
@@ -67,6 +73,9 @@ class FatherDataset(torch.utils.data.Dataset):
         # item['label'] = np.mean(ex['vad']) >= self.label_threshold
         item['label'] = ex['interp_vad']
         item['index'] = idx
+        
+        if self.transform:
+            item = self.transform(item)
         
         return item
 
@@ -99,3 +108,19 @@ class FatherDataset(torch.utils.data.Dataset):
 
         correct = (pred == labels).sum().item()
         return correct / len(labels)
+
+
+class RemoveConfidence(object):
+    """ Remove the confidence from the pose matrix
+
+    Args:
+    """
+    def __call__(self, items, multiple=False):
+        assert 'poses' in items
+
+        if multiple:
+            s = items['poses'].shape[1]
+            items['poses'] = items['poses'][:, np.mod(np.arange(s)+1, 3)!=0, :]
+        else:
+            raise NotImplementedError()
+        return items
