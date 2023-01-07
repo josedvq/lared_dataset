@@ -31,11 +31,11 @@ class System(pl.LightningModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        output = self.model(batch).squeeze()
-        loss = self.loss_fn(output, batch['label'].float())
+        output = self.model(batch).squeeze().cpu()
+        loss = self.loss_fn(output, batch['label'].float().cpu())
 
         # Logging to TensorBoard by default
-        self.log("train_loss", loss)
+        self.log("train_loss", loss.detach())
         return loss
 
     def configure_optimizers(self):
@@ -44,9 +44,9 @@ class System(pl.LightningModule):
         return optimizer
 
     def validation_step(self, batch, batch_idx):
-        output = self.model(batch)
+        output = self.model(batch).detach().cpu()
         
-        val_loss = self.loss_fn(output.squeeze(), batch['label'].float())
+        val_loss = self.loss_fn(output.squeeze(), batch['label'].float().cpu())
         self.log('val_loss', val_loss)
 
         return (output, batch['label'])
@@ -82,7 +82,8 @@ def _collate_fn(batch):
 
 def train(i, train_ds, val_ds, modalities, 
         trainer_params={}, prefix=None, task='classification', 
-        deterministic=False, eval_every_epoch=False, weights_path=None):
+        deterministic=False, eval_every_epoch=False, weights_path=None,
+        batch_size=32, num_workers=8):
 
     num_epochs = {
         ('accel',): 10,
@@ -92,7 +93,6 @@ def train(i, train_ds, val_ds, modalities,
     }
 
     # data loaders
-    batch_size = 32
     g = torch.Generator()
     g.manual_seed(729387+i)
 
@@ -102,7 +102,7 @@ def train(i, train_ds, val_ds, modalities,
         sampler=BatchSampler(
             RandomSampler(train_ds, generator=g), batch_size=batch_size, drop_last=False
         ),
-        num_workers=8,
+        num_workers=num_workers,
         generator=g,
         collate_fn=_collate_fn
     )
@@ -115,7 +115,7 @@ def train(i, train_ds, val_ds, modalities,
         sampler=BatchSampler(
             SequentialSampler(val_ds), batch_size=batch_size, drop_last=False
         ),
-        num_workers=8,
+        num_workers=num_workers,
         generator=g,
         collate_fn=_collate_fn
     )
@@ -139,9 +139,8 @@ def train(i, train_ds, val_ds, modalities,
     
     return trainer #system.test_results
 
-def test(i, model, test_ds, prefix=None):
+def test(i, model, test_ds, prefix=None, batch_size=32):
 
-    batch_size=32
     # data loaders
     g = torch.Generator()
     g.manual_seed(897689769+i)

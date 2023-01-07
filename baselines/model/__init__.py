@@ -38,15 +38,15 @@ class SegmentationFusionModel(torch.nn.Module):
         """
         """
         masks = []
-        if 'accel' in batch:
+        if 'accel' in self.modalities:
             f = self.accel_feature_extractor(batch['accel'])
             masks.append(self.accel_head(f))
 
-        if 'video' in batch:
+        if 'video' in self.modalities:
             f = self.video_feature_extractor(batch['video'])
             masks.append(self.video_head(f))
         
-        if 'poses' in batch:
+        if 'poses' in self.modalities:
             f = self.pose_feature_extractor(batch['poses'])
             masks.append(self.pose_head(f))
 
