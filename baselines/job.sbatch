@@ -10,7 +10,7 @@
 #SBATCH --gres=gpu
 
 module use /opt/insy/modulefiles
-module miniconda/3.8 load cuda/11.8 cudnn/11.5-8.3.0.98
+module load miniconda/3.8 cuda/11.5 cudnn/11.5-8.3.0.98
 
 conda activate /tudelft.net/staff-bulk/ewi/insy/SPCLab/jvargasquiros/venv
 
