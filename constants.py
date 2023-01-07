@@ -1,9 +1,13 @@
 import os
 import math
 
-dataset_path = '/home/josedvq/furnace/data/lared'
+dataset_path = '/tudelft.net/staff-umbrella/March15LaRedBirthdayParty/release'
+models_path = '/home/nfs/jvargasquiros/models'
+
+# dataset_path = '/home/josedvq/furnace/data/lared'
 # models
-models_path = '/home/josedvq/furnace/models'
+# models_path = '/home/josedvq/furnace/models'
+
 
 raw_data_path = os.path.join(dataset_path, 'raw')
 raw_pose_path = os.path.join(raw_data_path, 'pose')
