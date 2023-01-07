@@ -1,8 +1,3 @@
-# %%
-%load_ext autoreload
-%autoreload 2
-
-# %%
 import os
 import sys
 sys.path.append('/home/josedvq/furnace')
@@ -11,7 +6,6 @@ import logging
 import pickle
 import traceback
 
-# %%
 import torch
 
 import numpy as np
@@ -24,7 +18,6 @@ logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
 torch.backends.cudnn.benchmark=False
 torch.backends.cudnn.deterministic=True
 
-# %%
 from lared_dataset.data_loading.dataset import FatherDataset, FatherDatasetSubset, RemoveConfidence
 from lared_dataset.data_loading.extractors import VideoExtractor, AccelExtractor
 from lared_dataset.baselines.video.models import make_slow_pretrained_body as get_video_feature_extractor
@@ -36,7 +29,6 @@ from lared_dataset.constants import (
     examples_path)
 from lared_dataset.baselines.train import System, train, test
 
-# %%
 def do_cross_validation(do_train, ds, input_modalities, seed, prefix=None, deterministic=False):
     
     cv_splits = list(GroupKFold(n_splits=3).split(range(len(ds)), groups=ds.get_groups()))
@@ -79,7 +71,6 @@ def do_cross_validation(do_train, ds, input_modalities, seed, prefix=None, deter
     metrics = [r['metric'] for r in all_results]
     return metrics, outputs, indices
 
-# %%
 def do_run(examples, input_modalities, 
     do_train=True, deterministic=True, prefix=''):
     ''' train = True will train the models, and requires 
@@ -119,7 +110,6 @@ def do_run(examples, input_modalities,
         'seed': seed
     }
 
-# %%
 def get_table(do_train=True, deterministic=True):
     examples = pickle.load(open(examples_path, 'rb'))
 
@@ -142,55 +132,7 @@ def get_table(do_train=True, deterministic=True):
         res['-'.join(input_modalities)] = run_results
     return res
 
-# %%
 try:
     res = get_table(do_train=True, deterministic=False)
 except Exception:
     print(traceback.format_exc())
-
-# %%
-res
-
-# %%
-
-
-# %%
-res
-
-# %%
-
-
-# %%
-
-
-# %%
-
-
-# %%
-
-
-# %%
-
-
-# %%
-
-
-# %%
-
-
-# %%
-
-
-# %%
-
-
-# %%
-
-
-# %%
-
-
-# %%
-
-
-
