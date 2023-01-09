@@ -41,7 +41,6 @@ def get_table(do_train=True, deterministic=True):
 
 try:
     res = get_table(do_train=True, deterministic=False)
+    pickle.dump(res, open('res.pkl', 'wb'))
 except Exception:
     print(traceback.format_exc())
-
-pickle.dump(res, open('res.pkl', 'wb'))

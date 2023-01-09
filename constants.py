@@ -1,12 +1,12 @@
 import os
 import math
 
-dataset_path = '/tudelft.net/staff-umbrella/March15LaRedBirthdayParty/release'
-models_path = '/home/nfs/jvargasquiros/models'
+# dataset_path = '/tudelft.net/staff-umbrella/March15LaRedBirthdayParty/release'
+# models_path = '/home/nfs/jvargasquiros/models'
 
-# dataset_path = '/home/josedvq/furnace/data/lared'
+dataset_path = '/Users/josedvq/data/lared/release'
 # models
-# models_path = '/home/josedvq/furnace/models'
+models_path = '/home/josedvq/furnace/models'
 
 
 raw_data_path = os.path.join(dataset_path, 'raw')
@@ -44,3 +44,4 @@ balloon_pop_2_accel_frame = 47706 + 23/28
 balloon_pop_3_video_frame = 166836.5
 balloon_pop_3_accel_frame = 50776 + 30.5/32
 
+mnm_labels_path = '/Users/josedvq/data/mnm_mingling/annotations/new_LABELS.csv'
